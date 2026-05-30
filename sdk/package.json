@@ -1,10 +1,49 @@
 {
   "name": "@seven-gaming/sdk",
   "version": "1.0.0",
-  "description": "JS/TS SDK for Seven Chain gaming",
+  "description": "Official SDK for building on-chain games on Seven Chain — 1-second finality, no gas fees for players",
   "main": "dist/index.js",
-  "scripts": { "build": "tsup src/index.ts --format cjs,esm --dts" },
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "blockchain",
+    "gaming",
+    "web3",
+    "on-chain",
+    "seven-chain",
+    "ethereum",
+    "evm",
+    "game-sdk",
+    "play-to-earn",
+    "nft-gaming"
+  ],
+  "author": "The Seven <dev@theseven.meme>",
   "license": "MIT",
-  "dependencies": { "ethers": "^6.13.0" },
-  "devDependencies": { "tsup": "^8.0.0", "typescript": "^5.4.0" }
+  "homepage": "https://theseven.meme/game",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umairkhan2582/seven-gaming-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/umairkhan2582/seven-gaming-sdk/issues"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
 }
