@@ -20,16 +20,9 @@
     "test": "vitest run"
   },
   "keywords": [
-    "blockchain",
-    "gaming",
-    "web3",
-    "on-chain",
-    "seven-chain",
-    "ethereum",
-    "evm",
-    "game-sdk",
-    "play-to-earn",
-    "nft-gaming"
+    "blockchain", "gaming", "web3", "on-chain",
+    "seven-chain", "ethereum", "evm", "game-sdk",
+    "play-to-earn", "nft-gaming"
   ],
   "author": "The Seven <dev@theseven.meme>",
   "license": "MIT",
@@ -42,8 +35,10 @@
     "url": "https://github.com/umairkhan2582/seven-gaming-sdk/issues"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.4.0"
   }
 }
+
