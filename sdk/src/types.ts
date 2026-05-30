@@ -10,8 +10,16 @@ export interface GameSession {
   sessionId: string;
   /** Sanitised player name */
   playerName: string;
-  /** Auto-generated demo wallet address (0x7…) */
+  /**
+   * The wallet address used for this session.
+   * If the player connected a real wallet this is their address;
+   * otherwise a demo wallet (0x7…) is generated automatically.
+   */
   demoWallet: string;
+  /** Same as demoWallet — explicit alias for clarity */
+  walletAddress: string;
+  /** True when the player connected a real MetaMask / EIP-1193 wallet */
+  isRealWallet: boolean;
   /** Seven Chain ID: 70007 */
   chainId: number;
   /** Seven Chain JSON-RPC endpoint (EVM-compatible) */
@@ -71,6 +79,8 @@ export interface ScoreResult {
 /** A leaderboard entry */
 export interface LeaderboardEntry {
   player_name: string;
+  /** Wallet address (real or demo) */
+  wallet_address: string;
   score: number;
   kills: number;
   level_reached: number;
@@ -87,3 +97,4 @@ export interface GameStats {
   blockTime: string;
   rpc: string;
 }
+
