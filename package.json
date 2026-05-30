@@ -1,12 +1,26 @@
 {
   "name": "seven-gaming-sdk",
   "version": "1.0.0",
+  "description": "The first on-chain gaming SDK — build games where every action is a real blockchain transaction on Seven Chain",
   "private": true,
-  "description": "Web3 Gaming SDK for Seven Chain (Chain ID 70007)",
-  "workspaces": ["contracts", "sdk"],
+  "workspaces": ["sdk", "contracts"],
   "scripts": {
-    "compile": "pnpm --filter @seven-gaming/contracts run compile",
-    "build:sdk": "pnpm --filter @seven-gaming/sdk run build",
-    "deploy": "pnpm --filter @seven-gaming/contracts run deploy:sevenchain"
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "keywords": [
+    "blockchain-game",
+    "on-chain-gaming",
+    "seven-chain",
+    "web3-game",
+    "play-to-earn"
+  ],
+  "author": "The Seven <dev@theseven.meme>",
+  "license": "MIT",
+  "homepage": "https://theseven.meme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/umairkhan2582/seven-gaming-sdk"
   }
 }
