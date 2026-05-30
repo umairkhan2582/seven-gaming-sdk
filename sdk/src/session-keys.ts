@@ -33,6 +33,7 @@ export interface GenerateSessionKeyOptions {
 /**
  * Generate a new ephemeral session key pair.
  *
+ * Works in browsers (Web Crypto API) and Node.js >= 18 (globalThis.crypto).
  * The returned private key should be kept in memory only and never written to
  * disk or localStorage. It expires automatically after `duration` seconds.
  *
@@ -47,25 +48,22 @@ export interface GenerateSessionKeyOptions {
 export function generateSessionKey(
   options: GenerateSessionKeyOptions
 ): SessionKeyPair {
-  const duration = options.duration ?? 3600;
+  const duration  = options.duration ?? 3600;
   const expiresAt = Math.floor(Date.now() / 1000) + duration;
 
-  // Generate a random 32-byte private key
+  // Use Web Crypto API — available in browsers and Node.js >= 18
   const privateKeyBytes = new Uint8Array(32);
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(privateKeyBytes);
-  } else {
-    // Node.js fallback
-    const { randomBytes } = require('crypto');
-    randomBytes(32).copy(Buffer.from(privateKeyBytes.buffer));
-  }
+  globalThis.crypto.getRandomValues(privateKeyBytes);
 
-  const privateKey = '0x' + Array.from(privateKeyBytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  const privateKey =
+    "0x" +
+    Array.from(privateKeyBytes)
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
 
-  // Derive a mock address from the private key (first 20 bytes of keccak256 in a real impl)
-  const address = '0x' + privateKey.slice(2, 42);
+  // Derive a placeholder address from the first 20 bytes of the private key.
+  // In production, use ethers.js or viem to derive the real public address.
+  const address = "0x" + privateKey.slice(2, 42);
 
   return {
     address,
@@ -87,8 +85,9 @@ export function isSessionKeyValid(key: SessionKeyPair): boolean {
  */
 export function sessionKeyTimeRemaining(key: SessionKeyPair): string {
   const remaining = key.expiresAt - Math.floor(Date.now() / 1000);
-  if (remaining <= 0) return 'expired';
+  if (remaining <= 0) return "expired";
   if (remaining < 60) return `${remaining}s`;
   if (remaining < 3600) return `${Math.floor(remaining / 60)}m`;
   return `${Math.floor(remaining / 3600)}h`;
 }
+
