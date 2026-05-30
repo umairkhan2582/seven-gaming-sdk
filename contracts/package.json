@@ -1,0 +1,13 @@
+{
+  "name": "@seven-gaming/contracts",
+  "version": "1.0.0",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:sevenchain": "hardhat run deploy/01_deploy_all.ts --network sevenchain"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": { "@openzeppelin/contracts": "^5.1.0" }
+}
