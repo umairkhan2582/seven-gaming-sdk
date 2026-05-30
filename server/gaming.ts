@@ -6,16 +6,16 @@
  * DB, making it tamper-proof and queryable on-chain.
  *
  * Routes:
- *   POST /api/gaming/session       — create a session
+ *   POST /api/gaming/session       — create a session (accepts optional walletAddress)
  *   POST /api/gaming/action        — record an on-chain action
  *   GET  /api/gaming/transactions  — live transaction feed
  *   POST /api/gaming/score         — end session + post to leaderboard
  *   GET  /api/gaming/leaderboard   — top 20 players
  *   GET  /api/gaming/stats         — global stats
  */
-import { Router, type IRouter } from 'express';
-import crypto from 'crypto';
-import { pool } from '../lib/db-positions';
+import { Router, type IRouter } from "express";
+import crypto from "crypto";
+import { pool } from "../lib/db-positions";
 
 const router: IRouter = Router();
 
@@ -34,35 +34,48 @@ async function getLatestBlock(): Promise<number> {
 
 // ─── POST /api/gaming/session ────────────────────────────────────────────────
 
-router.post('/gaming/session', async (req, res): Promise<void> => {
+router.post("/gaming/session", async (req, res): Promise<void> => {
   try {
-    const { playerName } = req.body as { playerName?: string };
-    const sessionId  = crypto.randomUUID();
-    const demoWallet = '0x7' + crypto.randomBytes(19).toString('hex');
-    const name       = (playerName ?? 'Player').slice(0, 32);
+    const { playerName, walletAddress } = req.body as {
+      playerName?: string;
+      walletAddress?: string;
+    };
+
+    const sessionId = crypto.randomUUID();
+    const name      = (playerName ?? "Player").slice(0, 32);
+
+    // Use the real wallet if provided and valid; otherwise generate a demo wallet.
+    const isRealWallet =
+      typeof walletAddress === "string" &&
+      /^0x[0-9a-fA-F]{40}$/.test(walletAddress);
+    const wallet = isRealWallet
+      ? walletAddress!.toLowerCase()
+      : "0x7" + crypto.randomBytes(19).toString("hex");
 
     await pool.query(
       `INSERT INTO game_sessions (session_id, player_name, demo_wallet, is_active)
        VALUES ($1, $2, $3, true)
        ON CONFLICT (session_id) DO NOTHING`,
-      [sessionId, name, demoWallet]
+      [sessionId, name, wallet]
     );
 
     res.json({
       sessionId,
-      playerName:  name,
-      demoWallet,
-      chainId:     70007,
-      rpc:         'https://theseven.meme/api/seven-chain/jsonrpc',
+      playerName:   name,
+      demoWallet:   wallet,   // kept for backwards compat
+      walletAddress: wallet,
+      isRealWallet,
+      chainId: 70007,
+      rpc:     "https://theseven.meme/api/seven-chain/jsonrpc",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ─── POST /api/gaming/action ─────────────────────────────────────────────────
 
-router.post('/gaming/action', async (req, res): Promise<void> => {
+router.post("/gaming/action", async (req, res): Promise<void> => {
   try {
     const { sessionId, actionType, points, metadata } = req.body as {
       sessionId:  string;
@@ -72,11 +85,11 @@ router.post('/gaming/action', async (req, res): Promise<void> => {
     };
 
     if (!sessionId || !actionType) {
-      res.status(400).json({ error: 'sessionId and actionType required' });
+      res.status(400).json({ error: "sessionId and actionType required" });
       return;
     }
 
-    const txHash      = '0x' + crypto.randomBytes(32).toString('hex');
+    const txHash      = "0x" + crypto.randomBytes(32).toString("hex");
     const blockNumber = await getLatestBlock();
     const pts         = points ?? 10;
 
@@ -88,30 +101,29 @@ router.post('/gaming/action', async (req, res): Promise<void> => {
       [sessionId, actionType, txHash, blockNumber + 1, pts, JSON.stringify(metadata ?? {})]
     );
 
-    const killAdd = actionType === 'kill' ? 1 : 0;
     await pool.query(
       `UPDATE game_sessions SET score = score + $2, kills = kills + $3 WHERE session_id = $1`,
-      [sessionId, pts, killAdd]
+      [sessionId, pts, actionType === "kill" ? 1 : 0]
     );
 
     res.json({
       txHash,
-      blockNumber:     blockNumber + 1,
-      confirmed:       true,
-      confirmationMs:  Math.floor(Math.random() * 400) + 800,
-      chainId:         70007,
-      points:          pts,
+      blockNumber:    blockNumber + 1,
+      confirmed:      true,
+      confirmationMs: Math.floor(Math.random() * 400) + 800,
+      chainId:        70007,
+      points:         pts,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ─── GET /api/gaming/transactions ────────────────────────────────────────────
 
-router.get('/gaming/transactions', async (req, res): Promise<void> => {
+router.get("/gaming/transactions", async (req, res): Promise<void> => {
   try {
-    const limit = Math.min(parseInt((req.query.limit as string) ?? '20'), 50);
+    const limit = Math.min(parseInt((req.query.limit as string) ?? "20"), 50);
     const rows  = await pool.query(
       `SELECT gt.tx_hash, gt.action_type, gt.block_number, gt.points,
               gt.player_name, gt.confirmed, gt.created_at, gt.confirmed_at
@@ -121,24 +133,24 @@ router.get('/gaming/transactions', async (req, res): Promise<void> => {
       [limit]
     );
     res.json(rows.rows);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ─── POST /api/gaming/score ───────────────────────────────────────────────────
 
-router.post('/gaming/score', async (req, res): Promise<void> => {
+router.post("/gaming/score", async (req, res): Promise<void> => {
   try {
     const { sessionId } = req.body as { sessionId: string };
-    if (!sessionId) { res.status(400).json({ error: 'sessionId required' }); return; }
+    if (!sessionId) { res.status(400).json({ error: "sessionId required" }); return; }
 
     const sess = await pool.query(
       `UPDATE game_sessions SET is_active = false, ended_at = NOW()
        WHERE session_id = $1 RETURNING *`,
       [sessionId]
     );
-    if (!sess.rows[0]) { res.status(404).json({ error: 'Session not found' }); return; }
+    if (!sess.rows[0]) { res.status(404).json({ error: "Session not found" }); return; }
 
     const s       = sess.rows[0];
     const txCount = (await pool.query(
@@ -149,8 +161,7 @@ router.post('/gaming/score', async (req, res): Promise<void> => {
       `INSERT INTO game_leaderboard
          (session_id, player_name, wallet_address, score, kills, level_reached, tx_count, played_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())`,
-      [s.session_id, s.player_name, s.wallet_address ?? s.demo_wallet,
-       s.score, s.kills, s.level, parseInt(txCount)]
+      [s.session_id, s.player_name, s.demo_wallet, s.score, s.kills, s.level, parseInt(txCount)]
     );
 
     const rankRow = await pool.query(
@@ -158,33 +169,33 @@ router.post('/gaming/score', async (req, res): Promise<void> => {
     );
 
     res.json({
-      score:    s.score,
-      kills:    s.kills,
-      txCount:  parseInt(txCount),
-      rank:     parseInt(rankRow.rows[0].rank),
+      score:   s.score,
+      kills:   s.kills,
+      txCount: parseInt(txCount),
+      rank:    parseInt(rankRow.rows[0].rank),
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ─── GET /api/gaming/leaderboard ─────────────────────────────────────────────
 
-router.get('/gaming/leaderboard', async (req, res): Promise<void> => {
+router.get("/gaming/leaderboard", async (req, res): Promise<void> => {
   try {
     const rows = await pool.query(
-      `SELECT player_name, score, kills, level_reached, tx_count, played_at
+      `SELECT player_name, wallet_address, score, kills, level_reached, tx_count, played_at
        FROM game_leaderboard ORDER BY score DESC LIMIT 20`
     );
     res.json(rows.rows);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 // ─── GET /api/gaming/stats ───────────────────────────────────────────────────
 
-router.get('/gaming/stats', async (req, res): Promise<void> => {
+router.get("/gaming/stats", async (req, res): Promise<void> => {
   try {
     const [sessions, txs, topScore] = await Promise.all([
       pool.query(`SELECT COUNT(*) FROM game_leaderboard`),
@@ -194,14 +205,15 @@ router.get('/gaming/stats', async (req, res): Promise<void> => {
     res.json({
       totalGames:          parseInt(sessions.rows[0].count),
       totalOnChainActions: parseInt(txs.rows[0].count),
-      topScore:            parseInt(topScore.rows[0].max ?? '0'),
+      topScore:            parseInt(topScore.rows[0].max ?? "0"),
       chainId:             70007,
-      blockTime:           '1 second',
-      rpc:                 'https://theseven.meme/api/seven-chain/jsonrpc',
+      blockTime:           "1 second",
+      rpc:                 "https://theseven.meme/api/seven-chain/jsonrpc",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
 export default router;
+
