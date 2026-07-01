@@ -17,7 +17,7 @@ jobs:
           version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - run: pnpm install
       - run: pnpm --filter @seven-gaming/sdk typecheck
       - run: pnpm --filter @seven-gaming/sdk build
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - run: cd contracts && npm install
       - run: cd contracts && npx hardhat compile
 
